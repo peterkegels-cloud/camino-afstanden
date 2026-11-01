@@ -29,6 +29,11 @@ tr.grens td{font-weight:600}
 .fout{color:#b00020;background:#fde8ea;padding:10px;border-radius:8px;margin-top:10px;display:none}
 .fout.open{display:block}
 footer{font-size:12px;color:#667;margin:16px 0}
+.alb{border-top:1px solid #d7eef2;padding-top:8px;margin-top:8px}
+.alb select,.alb input,.alb textarea{width:100%;box-sizing:border-box;padding:6px;margin-top:4px;font-size:14px}
+.alb textarea{min-height:44px}
+.ov{background:#fff;border-radius:8px;padding:10px;margin-bottom:8px;font-size:14px;line-height:1.5;box-shadow:0 1px 2px #0002}
+.ov a{color:#0f6b7a}
 </style>
 </head>
 <body>
@@ -38,6 +43,9 @@ footer{font-size:12px;color:#667;margin:16px 0}
     <label>Start<select id="start"></select></label>
     <label>Eind<select id="eind"></select></label>
   </div>
+  <label style="display:flex;align-items:center;gap:8px;margin:10px 0;font-size:14px">
+    <input type="checkbox" id="filter"> Alleen plaatsen met albergue
+  </label>
   <div class="fout" id="fout">Het eindpunt moet na het startpunt liggen.</div>
   <div class="totaal">
     <div>Totale afstand<b id="tot">–</b></div>
@@ -46,14 +54,18 @@ footer{font-size:12px;color:#667;margin:16px 0}
   <div class="detail" id="detail"></div>
   <table>
     <thead>
-      <tr><th>Plaats</th><th>Etappe</th><th>Vanaf start</th><th>Nog te gaan</th></tr>
+      <tr><th>Plaats</th><th>Etappe</th><th>Vanaf start</th><th>Nog te gaan</th><th>Albergues</th></tr>
     </thead>
     <tbody id="rows"></tbody>
   </table>
+  <h3 style="font-size:16px;margin:18px 0 6px">Mijn overnachtingen</h3>
+  <div id="overzicht"></div>
   <footer>
     Afstanden uit de planificador van godesalco.com (Arturo J. Murias): Vía Lemovicense (standaardvariant met Nevers),
     Camino Francés (standaardvariant via Roncesvalles) en Prolongación a Finisterre (standaardvariant via Cee).
-    Etappe = afstand tot de vorige plaats in de gekozen lijst. "(FR …)" staat zo op godesalco.
+    Etappe = afstand tot de vorige plaats in de lijst (bij filter: vorige plaats met albergue).
+    "(FR …)" staat zo op godesalco. Albergues: aprinca.com, 88 albergues op de Camino Francés voor de winter.
+    Niet per albergue nagekeken; voor Vía Lemovicense en Finisterre staan er geen gegevens in.
   </footer>
 </main>
 <script>
@@ -63,6 +75,74 @@ const LEMO = [["Vézelay",0],["Saint-Père",2.8],["Champignolle-le-Bas (FR 1,5 k
 const FRANCES = [["Saint-Jean-Pied-de-Port",0],["Honto",5.2],["Orisson",7.6],["Izandorre",19],["Roncesvalles",24.9],["Burguete",27.9],["Espinal",31.5],["Viscarret",36.6],["Linzoáin",38.5],["Zubiri",46.6],["Urdániz (FR 0,5 km)",50],["Larrasoaña",52],["Aquerreta",52.7],["Zuriain",55.8],["Zabaldika",59],["Huarte (FR 1 km)",59.7],["Arre",62.8],["Villava",63.3],["Burlada",64.5],["Pamplona",67.3],["Cizur Menor",72.2],["Zariquiegui",78.4],["Uterga",84.4],["Obanos",88.9],["Puente la Reina",91.6],["Mañeru",96.6],["Cirauqui",99.2],["Lorca",104.9],["Villatuerta",109.6],["Estella",113.6],["Ayegui",115],["Urbanización Irache",117.6],["Ázqueta",120.8],["Villamayor de Monjardín",122.7],["Los Arcos",135.1],["Sansol",142.2],["Torres del Río / Armañanzas (FR 1,5 km)",142.9],["Viana",153.6],["Logroño",163.5],["Navarrete",176],["Sotés (FR 2 km)",179.5],["Ventosa (FR 1 km)",181.6],["Nájera",192.2],["Azofra",198.4],["Alesanco (FR 1,5 km)",198.6],["Cirueña",207.7],["Santo Domingo de la Calzada",213.9],["Grañón",220.9],["Redecilla del Camino",224.8],["Castildelgado",226.6],["Viloria de Rioja",228.6],["Villamayor del Río",232],["Belorado",236.8],["Tosantos",241.9],["Villambistia",243.7],["Espinosa del Camino",245.4],["Villafranca de Montes de Oca",249],["San Juan de Ortega",261.2],["Agés",264.9],["Atapuerca",267.5],["Olmos de Atapuerca (FR 2,6 km)",267.8],["Cardeñuela-Ríopico",273.6],["Orbaneja-Ríopico",275.8],["Castañares",280.5],["Burgos",287.6],["Villalbilla de Burgos (FR 0,8 km)",294.5],["Tardajos",298.4],["Rabé de las Calzadas",300.6],["Hornillos del Camino",308.6],["Arroyo San Bol (FR 0,3 km)",314.5],["Fuente Sidres",317.9],["Hontanas",319.3],["Convento de San Antón",325.1],["Castrojeriz",328.8],["Itero del Castillo (FR 1,2 km)",337.4],["Ermita de San Nicolás de Puente Fitero",338],["Itero de la Vega",340],["Boadilla del Camino",348.3],["Frómista",354.1],["Población de Campos",357.7],["Villarmentero de Campos",363.5],["Villalcázar de Sirga",367.8],["Carrión de los Condes",373.7],["Calzadilla de la Cueza",391],["Ledigos",397.1],["Terradillos de los Templarios",400.3],["Moratinos",403.7],["San Nicolás del Real Camino",406.3],["Sahagún",413.8],["Calzada del Coto (FR 0,5 km)",418.1],["Bercianos del Real Camino",423.8],["El Burgo Ranero",431.6],["Villamarco (FR 1,2 km)",439.5],["Reliegos",444.5],["Mansilla de las Mulas",450.8],["Puente Villarente",457.1],["Arcahueja",461.3],["León",469.7],["Trobajo del Camino",473.4],["La Virgen del Camino",477],["Valverde de la Virgen",481.2],["Villadangos del Páramo",490.5],["San Martín del Camino",495],["Villavante (FR 2,3 km)",497.8],["Puente de Órbigo",501.8],["Hospital de Órbigo",502.3],["Villares de Órbigo",504.9],["Santibáñez de Valdeiglesias",507.6],["San Justo de la Vega",515.7],["Astorga",519.4],["Valdeviejas (FR 0,2 km)",521.6],["Murias de Rechivaldo",524.2],["Castrillo de los Polvazares (FR 1,1 km)",525.9],["Santa Catalina de Somoza",528.8],["El Ganso",533.2],["Rabanal del Camino",540.1],["Foncebadón",545.7],["El Acebo",557.1],["Riego de Ambrós",560.4],["Molinaseca",565.1],["Ponferrada",573.1],["Columbrianos",577],["Fuentes Nuevas",580],["Camponaraya",582.5],["Cacabelos",588.2],["Valtuille de Arriba",592.3],["Villafranca del Bierzo",597.1],["Pereje",602.1],["Trabadelo",606.7],["La Portela de Valcarce",611],["Ambasmestas",612.1],["Vega de Valcarce",613.8],["Ruitelán",616],["Las Herrerías",617.4],["La Faba",620.5],["Laguna de Castilla",623],["O Cebreiro",625.3],["Liñares",628.6],["Hospital da Condesa",631.2],["Alto do Poio",633.9],["Fonfría",637.4],["Biduedo",639.8],["Filloval",642.9],["Pasantes",644.4],["Triacastela",646.5],["A Balsa",648.5],["Pintín",657.8],["Aguiada",659.7],["Sarria",664.6],["Vilei",668.2],["Barbadelo",668.8],["Peruscallo",673.5],["Morgade",676.6],["Ferreiros",678],["Pena",678.8],["Mercadoiro",681.5],["Portomarín",686.7],["Gonzar",695.3],["Castromaior",696.6],["Hospital da Cruz",699],["Ventas de Narón",700.7],["Ligonde",704],["Airexe",704.8],["Lestedo",707.8],["Os Valos",708.4],["Palas de Rei",712.4],["San Xulián do Camiño",716.1],["A Graña",716.5],["Ponte Campaña",717.1],["Casanova",718.3],["Vilar de Remonde (FR 1,5 km)",718.5],["Porto de Bois",719.7],["Coto",721.2],["Furelos",725.8],["Melide",727.5],["A Peroxa (Boente)",733],["Boente",733.2],["A Fraga Alta",735.6],["A Portela (FR 0,6 km)",736.5],["Ribadiso",738.7],["Arzúa",741.9],["Bebedeiro (FR 0,7 km)",746.3],["Pereiriña",746.9],["A Calle",749.7],["Salceda",753.1],["A Brea (O Pino)",755.3],["O Empalme",757.2],["Santa Irene",758],["A Rúa (O Pino)",759.9],["O Pedrouzo (FR 0,5 km)",760.5],["Amenal",764.4],["San Paio",768.4],["Lavacolla",770.6],["Vilamaior",771.9],["San Marcos",775.6],["Monte del Gozo",776],["Santiago de Compostela",780.8]];
 
 const FISTERRA = [["Santiago de Compostela",0],["Roxos",7.3],["Ventosa",10.1],["Logrosa (FR 0,7 km)",20.7],["Chancela",20.8],["Negreira",21.4],["San Vicenzo de Aro",26.2],["A Pena",29.9],["Vilaserío",34.6],["Santa Mariña",42.8],["Lago",49.7],["Quintáns (Mazaricos) (FR 1,8 km)",50.7],["A Picota (FR 2,4 km)",51.5],["Ponte Olveira",54.3],["Olveiroa",56.2],["O Logoso",59.8],["Hospital",61.6],["Cee",75.8],["Corcubión",78],["A Amarela",80.1],["Estorde",81.1],["Sardiñeiro de Abaixo",82.8],["Escaselas",86.8],["Finisterre",88.6],["Cabo de Finisterre",92.1]];
+
+// Albergues per plaats, uit aprinca.com (88 albergues, Camino Francés, winteropening).
+// Sleutels zijn de plaatsnamen zoals godesalco ze gebruikt (zonder "(FR …)").
+const ALB = {
+  "Roncesvalles": ["Albergue de peregrinos"],
+  "Zubiri": ["Rio Arga"],
+  "Arre": ["Trinidad de Arre"],
+  "Villava": ["Municipal"],
+  "Pamplona": ["Jesús y María", "Plaza Catedral", "Aloha Hostel"],
+  "Puente la Reina": ["Padres Reparadores", "Estrella Guía"],
+  "Lorca": ["La Bodega del Camino"],
+  "Estella": ["Capuchinos Rocamador", "La Hostería del Camino", "Municipal"],
+  "Ázqueta": ["La Perla Negra"],
+  "Los Arcos": ["La Fuente Casa de Austria", "Los Arcos"],
+  "Sansol": ["Karma"],
+  "Torres del Río / Armañanzas": ["La Pata de Oca"],
+  "Viana": ["Municipal"],
+  "Logroño": ["Parroquia Santiago El Real", "Municipal"],
+  "Navarrete": ["La Iglesia"],
+  "Nájera": ["Municipal"],
+  "Cirueña": ["Virgen de Guadalupe"],
+  "Santo Domingo de la Calzada": ["Casa de la Cofradía del Santo"],
+  "Grañón": ["Parroquial San Juan Bautista"],
+  "Espinosa del Camino": ["El Gato Loco"],
+  "Villafranca de Montes de Oca": ["San Antón Abad"],
+  "San Juan de Ortega": ["La Cuadra de Luisito"],
+  "Atapuerca": ["Plazuela Verde"],
+  "Burgos": ["Municipal Casa de los Cubos"],
+  "Tardajos": ["La Casa de Beli"],
+  "Hornillos del Camino": ["Municipal"],
+  "Hontanas": ["San Juan"],
+  "Castrojeriz": ["A Cien Leguas", "San Esteban"],
+  "Itero de la Vega": ["Puente Fitero", "Hogar del Peregrino"],
+  "Frómista": ["Betania", "Luz de Frómista", "El chiringuito del Camino", "Municipal"],
+  "Población de Campos": ["Municipal"],
+  "Carrión de los Condes": ["Espíritu Santo"],
+  "Ledigos": ["La Morena", "El Palomar"],
+  "Terradillos de los Templarios": ["Albergue Jacques de Molay"],
+  "Moratinos": ["Albergue Moratinos"],
+  "Sahagún": ["Cluny", "Santa Cruz"],
+  "Calzada del Coto": ["San Roque"],
+  "Bercianos del Real Camino": ["El Sueve"],
+  "El Burgo Ranero": ["Domenico Laffi"],
+  "Villamarco": ["La Vieja Escuela"],
+  "Mansilla de las Mulas": ["Gaia", "Municipal"],
+  "León": ["Check in León"],
+  "San Martín del Camino": ["Vieira", "La Huella del Camino"],
+  "Hospital de Órbigo": ["Albergue Verde"],
+  "Villares de Órbigo": ["El Encanto"],
+  "Astorga": ["Siervas de María", "So Por Hoje", "Franciscanos Santa María de los Ángeles"],
+  "Murias de Rechivaldo": ["Casa Flor"],
+  "Rabanal del Camino": ["Ntra. Sra. Del Pilar"],
+  "Foncebadón": ["Domus Dei"],
+  "Molinaseca": ["Señor Oso"],
+  "Ponferrada": ["San Nicolás de Flüe"],
+  "Cacabelos": ["La Gallega"],
+  "Valtuille de Arriba": ["La Biznaga"],
+  "Villafranca del Bierzo": ["La Piedra"],
+  "Trabadelo": ["Crispeta", "Municipal"],
+  "Ambasmestas": ["Cantadora"],
+  "Ruitelán": ["Pequeño Potala"],
+  "Triacastela": ["Oribio", "Berce do Camiño", "El Beso"],
+  "Portomarín": ["Ultreia", "Casona da Ponte"],
+  "Palas de Rei": ["A Casina di Marcello", "Zendoira"],
+  "Melide": ["Pereiro"],
+  "Arzúa": ["Vía Láctea"],
+  "O Pedrouzo": ["O Burgo"]
+};
 
 // Samenvoegen tot één lijst. Junctiepunten (SJPP, Santiago) staan één keer.
 const r1 = x => Math.round(x * 10) / 10;
@@ -89,11 +169,83 @@ pts.forEach((p, i) => {
 startSel.value = pts.findIndex(p => p.n === 'Mont-de-Marsan');
 eindSel.value = pts.length - 1;
 
+const filterEl = document.getElementById('filter');
+
+// Albergues voor een plaats; "(FR …)" uit de naam weggehaald voor de opzoeking.
+function albOf(i) {
+  const n = pts[i].n.replace(/\s*\(FR[^)]*\)\s*$/, '').trim();
+  return ALB[n] || [];
+}
+
+// Eigen keuzes per albergue, alleen op dit toestel opgeslagen (localStorage).
+let staat = {};
+try { staat = JSON.parse(localStorage.getItem('albergues') || '{}'); } catch (err) { staat = {}; }
+
+function albKey(plaats, naam) {
+  return plaats.replace(/\s*\(FR[^)]*\)\s*$/, '').trim() + '|' + naam;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function albergueBlok(plaats, naam) {
+  const k = albKey(plaats, naam);
+  const st = staat[k] || { status: '', tel: '', notitie: '' };
+  const div = document.createElement('div');
+  div.className = 'alb';
+  div.innerHTML =
+    `<b>${esc(naam)}</b>` +
+    `<select data-f="status">` +
+      `<option value="">Nog niets</option><option>Voorkeur</option><option>Gekozen</option><option>Geboekt</option>` +
+    `</select>` +
+    `<input type="text" placeholder="Telefoon / WhatsApp (met landcode, bv. +34…)">` +
+    `<textarea placeholder="Notitie"></textarea>`;
+  div.querySelector('select').value = st.status;
+  div.querySelector('input').value = st.tel;
+  div.querySelector('textarea').value = st.notitie;
+  const bewaarVeld = () => {
+    staat[k] = {
+      status: div.querySelector('select').value,
+      tel: div.querySelector('input').value.trim(),
+      notitie: div.querySelector('textarea').value
+    };
+    localStorage.setItem('albergues', JSON.stringify(staat));
+    renderOverzicht();
+  };
+  div.querySelectorAll('select, input').forEach(el => el.addEventListener('change', bewaarVeld));
+  div.querySelector('textarea').addEventListener('input', bewaarVeld);
+  return div;
+}
+
+function renderOverzicht() {
+  const el = document.getElementById('overzicht');
+  const items = [];
+  pts.forEach(p => albOf(pts.indexOf(p)).forEach(naam => {
+    const st = staat[albKey(p.n, naam)];
+    if (st && (st.status || st.tel || st.notitie)) items.push({ p, naam, st });
+  }));
+  if (!items.length) {
+    el.innerHTML = '<p style="font-size:14px;color:#667">Nog geen albergues gekozen of ingevuld.</p>';
+    return;
+  }
+  el.innerHTML = items.map(({ p, naam, st }) => {
+    const nummer = st.tel.replace(/[^\d+]/g, '');
+    const links = nummer
+      ? ` <a href="tel:${nummer}">Bel</a> · <a href="https://wa.me/${nummer.replace('+', '')}">WhatsApp</a>`
+      : '';
+    return `<div class="ov"><b>${esc(p.n)}</b> · ${esc(naam)}` +
+      (st.status ? ` · <i>${esc(st.status)}</i>` : '') +
+      `<br>${st.tel ? esc(st.tel) : ''}${links}` +
+      (st.notitie ? `<br><span style="color:#445">${esc(st.notitie)}</span>` : '') +
+      `</div>`;
+  }).join('');
+}
+
 function render() {
   const s = +startSel.value, e = +eindSel.value;
   rowsEl.innerHTML = '';
   detailEl.classList.remove('open');
-  geselecteerd = null;
   if (e <= s) {
     foutEl.classList.add('open');
     document.getElementById('tot').textContent = '–';
@@ -102,39 +254,58 @@ function render() {
   }
   foutEl.classList.remove('open');
   document.getElementById('tot').textContent = km(pts[e].k - pts[s].k);
-  document.getElementById('aant').textContent = (e - s) + ' etappes';
 
+  // Met filter: alleen plaatsen met albergue, plus start en eind.
+  // Etappe = afstand tot de vorige zichtbare plaats.
+  const zichtbaar = [];
   for (let i = s; i <= e; i++) {
+    if (!filterEl.checked || i === s || i === e || albOf(i).length) zichtbaar.push(i);
+  }
+  document.getElementById('aant').textContent = (zichtbaar.length - 1) + ' etappes';
+
+  let prev = null;
+  zichtbaar.forEach(i => {
     const tr = document.createElement('tr');
     tr.className = 'klik' + (i === s || i === e ? ' grens' : '');
     tr.dataset.i = i;
-    const etappe = i === s ? '–' : km(pts[i].k - pts[i - 1].k);
-    const vanafStart = km(pts[i].k - pts[s].k);
-    const nogTeGaan = km(pts[e].k - pts[i].k);
-    tr.innerHTML = `<td></td><td>${etappe}</td><td>${vanafStart}</td><td>${nogTeGaan}</td>`;
+    const etappe = prev === null ? '–' : km(pts[i].k - pts[prev].k);
+    const aantal = albOf(i).length;
+    tr.innerHTML =
+      `<td></td><td>${etappe}</td><td>${km(pts[i].k - pts[s].k)}</td>` +
+      `<td>${km(pts[e].k - pts[i].k)}</td><td>${aantal || '–'}</td>`;
     tr.firstChild.textContent = pts[i].n;
-    tr.addEventListener('click', () => toonDetail(i, s, e));
+    tr.addEventListener('click', () => toonDetail(i, prev, s, e));
     rowsEl.appendChild(tr);
-  }
+    prev = i;
+  });
 }
 
-function toonDetail(i, s, e) {
+function toonDetail(i, prev, s, e) {
   document.querySelectorAll('#rows tr').forEach(tr => tr.classList.remove('geselecteerd'));
   rowsEl.querySelector(`tr[data-i="${i}"]`).classList.add('geselecteerd');
   const p = pts[i];
-  const etappe = i === s ? 'Startpunt' : km(p.k - pts[i - 1].k) + ' vanaf ' + pts[i - 1].n;
+  const etappe = prev === null ? 'Startpunt' : km(p.k - pts[prev].k) + ' vanaf ' + pts[prev].n;
   detailEl.innerHTML =
     `<b>${p.n}</b><br>` +
     `Etappe: ${etappe}<br>` +
     `Vanaf start: ${km(p.k - pts[s].k)}<br>` +
     `Nog te gaan tot eind: ${km(pts[e].k - p.k)}<br>` +
     `Totale afstand traject: ${km(pts[e].k - pts[s].k)}`;
+  const alb = albOf(i);
+  if (alb.length) {
+    detailEl.appendChild(Object.assign(document.createElement('div'), { innerHTML: '<br><b>Albergues</b>' }));
+    alb.forEach(naam => detailEl.appendChild(albergueBlok(p.n, naam)));
+  } else {
+    detailEl.insertAdjacentHTML('beforeend', '<br>Geen albergue op de aprinca-lijst (Camino Francés)');
+  }
   detailEl.classList.add('open');
 }
 
 startSel.addEventListener('change', render);
 eindSel.addEventListener('change', render);
+filterEl.addEventListener('change', render);
 render();
+renderOverzicht();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
