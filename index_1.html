@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Camino afstanden</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f4f6f8;color:#1a2a33}
+header{background:#0f3b4c;color:#fff;padding:12px 16px}
+header h1{font-size:18px;margin:0}
+main{padding:12px 16px;max-width:760px;margin:0 auto}
+.kies{display:flex;gap:8px;flex-wrap:wrap}
+.kies label{flex:1;min-width:220px;font-size:13px}
+select{width:100%;padding:8px;font-size:15px;margin-top:4px;box-sizing:border-box}
+.totaal{display:flex;gap:8px;margin:12px 0}
+.totaal div{flex:1;background:#fff;border-radius:8px;padding:10px;text-align:center;box-shadow:0 1px 2px #0002;font-size:13px}
+.totaal b{display:block;font-size:20px;margin-top:4px}
+.detail{background:#fff;border-left:4px solid #1d8a99;padding:10px 12px;border-radius:8px;margin:10px 0;display:none;font-size:14px;line-height:1.6}
+.detail.open{display:block}
+.detail b{font-size:16px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;font-size:14px}
+th,td{padding:7px 8px;text-align:right;border-bottom:1px solid #e5e9ec}
+th:first-child,td:first-child{text-align:left}
+th{background:#e8eef2;font-weight:600;font-size:12px}
+tr.klik{cursor:pointer}
+tr.klik:hover{background:#f0f7f9}
+tr.geselecteerd{background:#d7eef2}
+tr.grens td{font-weight:600}
+.fout{color:#b00020;background:#fde8ea;padding:10px;border-radius:8px;margin-top:10px;display:none}
+.fout.open{display:block}
+footer{font-size:12px;color:#667;margin:16px 0}
+</style>
+</head>
+<body>
+<header><h1>Camino afstanden</h1></header>
+<main>
+  <div class="kies">
+    <label>Start<select id="start"></select></label>
+    <label>Eind<select id="eind"></select></label>
+  </div>
+  <div class="fout" id="fout">Het eindpunt moet na het startpunt liggen.</div>
+  <div class="totaal">
+    <div>Totale afstand<b id="tot">–</b></div>
+    <div>Etappes<b id="aant">–</b></div>
+  </div>
+  <div class="detail" id="detail"></div>
+  <table>
+    <thead>
+      <tr><th>Plaats</th><th>Etappe</th><th>Vanaf start</th><th>Nog te gaan</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <footer>
+    Afstanden uit de planificador van godesalco.com (Arturo J. Murias): Vía Lemovicense (standaardvariant met Nevers),
+    Camino Francés (standaardvariant via Roncesvalles) en Prolongación a Finisterre (standaardvariant via Cee).
+    Etappe = afstand tot de vorige plaats in de gekozen lijst. "(FR …)" staat zo op godesalco.
+  </footer>
+</main>
+<script>
+// Cumulatieve afstanden (km) per traject, zoals op godesalco.com/plan/...
+const LEMO = [["Vézelay",0],["Saint-Père",2.8],["Champignolle-le-Bas (FR 1,5 km)",15.3],["Bazoches",16],["Domaine de Drémont (FR 3 km)",23.5],["Le Chemin",25.6],["Charpuis",30.5],["Combres (FR 2 km)",31.9],["Corbigny",36.6],["Chaumot",40.5],["Saint-Révérien",55.6],["Boulon",65.4],["Le Breuil (Prémery)",68.2],["Prémery",72.4],["Cervenon (Prémery) (FR 2,4 km)",72.7],["Guérigny",91],["Nevers",105],["Sermoise-sur-Loire",107.3],["Challuy",109.8],["Magny-Cours",119.5],["Saint-Parize-le-Châtel",124.9],["Rond de Bord",127.8],["Saint-Pierre-le-Moûtier",135.6],["Le Veurdre",145.6],["Pouzy-Mésangy (FR 0,9 km)",152.4],["Lurcy-Lévis",159.3],["Les Colombières (FR 0,7 km)",167.7],["Les Cacherats",168.3],["Valigny",170.3],["Isle-et-Bardais (FR 2 km)",170.7],["Ainay-le-Château",182.2],["Charenton-du-Cher",188.7],["Gâteau",196.5],["Saint-Amand-Montrond",201.5],["Orval",203.6],["Bouzais",206.5],["Le Grand Planche",216.6],["Le Châtelet",229.4],["Les Archers",231.8],["Châteaumeillant",241.6],["Néret",246.4],["Le Maury",247.2],["Lacs",257.1],["La Châtre",260.5],["Montgivray (FR 2,2 km)",262.2],["Le Petit Chenil",267.3],["Sarzay",269],["Neuvy-Saint-Sépulchre",278.9],["Mouhers (FR 0,8 km)",283.9],["Cluis",287.8],["Pommiers",296.2],["Gargilesse-Dampierre",303.2],["La Chaumerette (FR 0,8 km)",303.6],["Cuzion",308.8],["Le Moulin de Châteaubrun",310],["Éguzon-Chantôme",314.8],["Chambon (FR 2,4 km)",314.9],["La Chaudronnière (FR 0,6 km)",319.3],["Crozant",323.3],["La Chapelle-Baloue",329.8],["La Roche (Saint-Germain-Beaupré) (FR 0,9 km)",337.7],["Saint-Germain-Beaupré",337.9],["Saint-Agnant-de-Versillat",342.7],["La Souterraine",348.9],["Chamborand",363.4],["Bénévent-l'Abbaye",371.2],["Marsac",376.2],["Les Rorgues",377.7],["Saint-Goussaud",384.3],["La Chateneide (FR 0,8 km)",385.4],["Châtelus-le-Marcheix",390.1],["Arsouze (FR 0,5 km)",391.9],["Beaumont (FR 0,9 km)",392.5],["La Besse (FR 1,8 km)",399.7],["Les Billanges",400.2],["Pont du Dognon",405.2],["La Gasnerie (FR 1 km)",407.7],["Saint-Léonard-de-Noblat",420.5],["Le Masbareau (FR 0,4 km)",427.2],["Limoges",443.9],["Aixe-sur-Vienne",457.4],["Flavignac",472.8],["Le Pré du Lac (FR 2 km)",482.3],["Châlus",485.8],["Le Lac",488.5],["Firbeix",493.9],["La Coquille",503.7],["Les Bouilloux",520.6],["Thiviers",522.6],["Négrondes",536],["Sorges",541.6],["Périgueux",565.1],["Chancelade",571.9],["L'Éperon (FR 1,3 km)",584.4],["Saint-Astier",589.8],["Planèze",599.8],["Neuvic",602],["Douzillac (FR 0,9 km)",607.2],["Sourzac (FR 1,1 km)",612],["Mussidan",617],["Lieu-dit La Gratade",630.4],["Étang de Bazange",639.5],["Virolle",643.2],["Ponchapt (FR 1,7 km)",644.2],["Port-Sainte-Foy",652],["Sainte-Foy-la-Grande",652.2],["Le Peyrail (FR 0,7 km)",660.7],["Taillade",664.4],["Caplong",665.7],["Pellegrue",674.2],["Saint-Ferme",681.7],["Coutures",688.9],["Roquebrune",692.2],["Saint-Hilaire-de-la-Noaille",696.9],["La Réole",702.1],["Floudès",706.2],["Bassane",708.9],["Puybarban (FR 1 km)",709.7],["Pondaurat",711.9],["Le Rivet (FR 2,5 km)",715.8],["Aillas (FR 4,5 km)",721.6],["Auros",723],["Brouqueyran",728],["Bazas",740],["Lieu-dit Talos (FR 0,2 km)",744.5],["Bernos-Beaulac (FR 1,6 km)",747.5],["Captieux",757.8],["Bourriot-Bergonce",779.2],["Vialotte (FR 2 km)",780.5],["Retjons (FR 2,3 km)",785.4],["Roquefort",793.8],["Bostens",802.8],["Gaillères",806.7],["Mont-de-Marsan",823.5],["Saint-Pierre-du-Mont",826.2],["Sainte-Eulalie",841.5],["Saint-Sever",844.6],["Hagetmau",860.7],["Argelos",872],["Castaignos-Souslens (FR 1 km)",873.4],["Beyries (FR 0,3 km)",874],["Orthez",890.6],["Sainte-Suzanne",894.6],["L'Hôpital-d'Orion",901.9],["Sauveterre-de-Béarn",914.5],["Guinarthe-Parenties",916.7],["Osserain-Rivareyte",918],["Autevielle (FR 1,8 km)",918.5],["Saint-Palais",930],["Harambeltz",938.4],["Ostabat",942],["Larceveau",945.2],["Larralde Borda",954.3],["Bussunarits",957.9],["Saint-Jean-le-Vieux",960.4],["La Madeleine",962.9],["Saint-Jean-Pied-de-Port",964.7]];
+
+const FRANCES = [["Saint-Jean-Pied-de-Port",0],["Honto",5.2],["Orisson",7.6],["Izandorre",19],["Roncesvalles",24.9],["Burguete",27.9],["Espinal",31.5],["Viscarret",36.6],["Linzoáin",38.5],["Zubiri",46.6],["Urdániz (FR 0,5 km)",50],["Larrasoaña",52],["Aquerreta",52.7],["Zuriain",55.8],["Zabaldika",59],["Huarte (FR 1 km)",59.7],["Arre",62.8],["Villava",63.3],["Burlada",64.5],["Pamplona",67.3],["Cizur Menor",72.2],["Zariquiegui",78.4],["Uterga",84.4],["Obanos",88.9],["Puente la Reina",91.6],["Mañeru",96.6],["Cirauqui",99.2],["Lorca",104.9],["Villatuerta",109.6],["Estella",113.6],["Ayegui",115],["Urbanización Irache",117.6],["Ázqueta",120.8],["Villamayor de Monjardín",122.7],["Los Arcos",135.1],["Sansol",142.2],["Torres del Río / Armañanzas (FR 1,5 km)",142.9],["Viana",153.6],["Logroño",163.5],["Navarrete",176],["Sotés (FR 2 km)",179.5],["Ventosa (FR 1 km)",181.6],["Nájera",192.2],["Azofra",198.4],["Alesanco (FR 1,5 km)",198.6],["Cirueña",207.7],["Santo Domingo de la Calzada",213.9],["Grañón",220.9],["Redecilla del Camino",224.8],["Castildelgado",226.6],["Viloria de Rioja",228.6],["Villamayor del Río",232],["Belorado",236.8],["Tosantos",241.9],["Villambistia",243.7],["Espinosa del Camino",245.4],["Villafranca de Montes de Oca",249],["San Juan de Ortega",261.2],["Agés",264.9],["Atapuerca",267.5],["Olmos de Atapuerca (FR 2,6 km)",267.8],["Cardeñuela-Ríopico",273.6],["Orbaneja-Ríopico",275.8],["Castañares",280.5],["Burgos",287.6],["Villalbilla de Burgos (FR 0,8 km)",294.5],["Tardajos",298.4],["Rabé de las Calzadas",300.6],["Hornillos del Camino",308.6],["Arroyo San Bol (FR 0,3 km)",314.5],["Fuente Sidres",317.9],["Hontanas",319.3],["Convento de San Antón",325.1],["Castrojeriz",328.8],["Itero del Castillo (FR 1,2 km)",337.4],["Ermita de San Nicolás de Puente Fitero",338],["Itero de la Vega",340],["Boadilla del Camino",348.3],["Frómista",354.1],["Población de Campos",357.7],["Villarmentero de Campos",363.5],["Villalcázar de Sirga",367.8],["Carrión de los Condes",373.7],["Calzadilla de la Cueza",391],["Ledigos",397.1],["Terradillos de los Templarios",400.3],["Moratinos",403.7],["San Nicolás del Real Camino",406.3],["Sahagún",413.8],["Calzada del Coto (FR 0,5 km)",418.1],["Bercianos del Real Camino",423.8],["El Burgo Ranero",431.6],["Villamarco (FR 1,2 km)",439.5],["Reliegos",444.5],["Mansilla de las Mulas",450.8],["Puente Villarente",457.1],["Arcahueja",461.3],["León",469.7],["Trobajo del Camino",473.4],["La Virgen del Camino",477],["Valverde de la Virgen",481.2],["Villadangos del Páramo",490.5],["San Martín del Camino",495],["Villavante (FR 2,3 km)",497.8],["Puente de Órbigo",501.8],["Hospital de Órbigo",502.3],["Villares de Órbigo",504.9],["Santibáñez de Valdeiglesias",507.6],["San Justo de la Vega",515.7],["Astorga",519.4],["Valdeviejas (FR 0,2 km)",521.6],["Murias de Rechivaldo",524.2],["Castrillo de los Polvazares (FR 1,1 km)",525.9],["Santa Catalina de Somoza",528.8],["El Ganso",533.2],["Rabanal del Camino",540.1],["Foncebadón",545.7],["El Acebo",557.1],["Riego de Ambrós",560.4],["Molinaseca",565.1],["Ponferrada",573.1],["Columbrianos",577],["Fuentes Nuevas",580],["Camponaraya",582.5],["Cacabelos",588.2],["Valtuille de Arriba",592.3],["Villafranca del Bierzo",597.1],["Pereje",602.1],["Trabadelo",606.7],["La Portela de Valcarce",611],["Ambasmestas",612.1],["Vega de Valcarce",613.8],["Ruitelán",616],["Las Herrerías",617.4],["La Faba",620.5],["Laguna de Castilla",623],["O Cebreiro",625.3],["Liñares",628.6],["Hospital da Condesa",631.2],["Alto do Poio",633.9],["Fonfría",637.4],["Biduedo",639.8],["Filloval",642.9],["Pasantes",644.4],["Triacastela",646.5],["A Balsa",648.5],["Pintín",657.8],["Aguiada",659.7],["Sarria",664.6],["Vilei",668.2],["Barbadelo",668.8],["Peruscallo",673.5],["Morgade",676.6],["Ferreiros",678],["Pena",678.8],["Mercadoiro",681.5],["Portomarín",686.7],["Gonzar",695.3],["Castromaior",696.6],["Hospital da Cruz",699],["Ventas de Narón",700.7],["Ligonde",704],["Airexe",704.8],["Lestedo",707.8],["Os Valos",708.4],["Palas de Rei",712.4],["San Xulián do Camiño",716.1],["A Graña",716.5],["Ponte Campaña",717.1],["Casanova",718.3],["Vilar de Remonde (FR 1,5 km)",718.5],["Porto de Bois",719.7],["Coto",721.2],["Furelos",725.8],["Melide",727.5],["A Peroxa (Boente)",733],["Boente",733.2],["A Fraga Alta",735.6],["A Portela (FR 0,6 km)",736.5],["Ribadiso",738.7],["Arzúa",741.9],["Bebedeiro (FR 0,7 km)",746.3],["Pereiriña",746.9],["A Calle",749.7],["Salceda",753.1],["A Brea (O Pino)",755.3],["O Empalme",757.2],["Santa Irene",758],["A Rúa (O Pino)",759.9],["O Pedrouzo (FR 0,5 km)",760.5],["Amenal",764.4],["San Paio",768.4],["Lavacolla",770.6],["Vilamaior",771.9],["San Marcos",775.6],["Monte del Gozo",776],["Santiago de Compostela",780.8]];
+
+const FISTERRA = [["Santiago de Compostela",0],["Roxos",7.3],["Ventosa",10.1],["Logrosa (FR 0,7 km)",20.7],["Chancela",20.8],["Negreira",21.4],["San Vicenzo de Aro",26.2],["A Pena",29.9],["Vilaserío",34.6],["Santa Mariña",42.8],["Lago",49.7],["Quintáns (Mazaricos) (FR 1,8 km)",50.7],["A Picota (FR 2,4 km)",51.5],["Ponte Olveira",54.3],["Olveiroa",56.2],["O Logoso",59.8],["Hospital",61.6],["Cee",75.8],["Corcubión",78],["A Amarela",80.1],["Estorde",81.1],["Sardiñeiro de Abaixo",82.8],["Escaselas",86.8],["Finisterre",88.6],["Cabo de Finisterre",92.1]];
+
+// Samenvoegen tot één lijst. Junctiepunten (SJPP, Santiago) staan één keer.
+const r1 = x => Math.round(x * 10) / 10;
+const pts = [];
+LEMO.forEach(([n, k]) => pts.push({ n, k }));
+const o1 = LEMO[LEMO.length - 1][1];
+FRANCES.slice(1).forEach(([n, k]) => pts.push({ n, k: r1(k + o1) }));
+const o2 = r1(o1 + FRANCES[FRANCES.length - 1][1]);
+FISTERRA.slice(1).forEach(([n, k]) => pts.push({ n, k: r1(k + o2) }));
+
+const startSel = document.getElementById('start');
+const eindSel = document.getElementById('eind');
+const rowsEl = document.getElementById('rows');
+const detailEl = document.getElementById('detail');
+const foutEl = document.getElementById('fout');
+let geselecteerd = null;
+
+const km = x => r1(x).toLocaleString('nl-BE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km';
+
+pts.forEach((p, i) => {
+  startSel.add(new Option(p.n, i));
+  eindSel.add(new Option(p.n, i));
+});
+startSel.value = pts.findIndex(p => p.n === 'Mont-de-Marsan');
+eindSel.value = pts.length - 1;
+
+function render() {
+  const s = +startSel.value, e = +eindSel.value;
+  rowsEl.innerHTML = '';
+  detailEl.classList.remove('open');
+  geselecteerd = null;
+  if (e <= s) {
+    foutEl.classList.add('open');
+    document.getElementById('tot').textContent = '–';
+    document.getElementById('aant').textContent = '–';
+    return;
+  }
+  foutEl.classList.remove('open');
+  document.getElementById('tot').textContent = km(pts[e].k - pts[s].k);
+  document.getElementById('aant').textContent = (e - s) + ' etappes';
+
+  for (let i = s; i <= e; i++) {
+    const tr = document.createElement('tr');
+    tr.className = 'klik' + (i === s || i === e ? ' grens' : '');
+    tr.dataset.i = i;
+    const etappe = i === s ? '–' : km(pts[i].k - pts[i - 1].k);
+    const vanafStart = km(pts[i].k - pts[s].k);
+    const nogTeGaan = km(pts[e].k - pts[i].k);
+    tr.innerHTML = `<td></td><td>${etappe}</td><td>${vanafStart}</td><td>${nogTeGaan}</td>`;
+    tr.firstChild.textContent = pts[i].n;
+    tr.addEventListener('click', () => toonDetail(i, s, e));
+    rowsEl.appendChild(tr);
+  }
+}
+
+function toonDetail(i, s, e) {
+  document.querySelectorAll('#rows tr').forEach(tr => tr.classList.remove('geselecteerd'));
+  rowsEl.querySelector(`tr[data-i="${i}"]`).classList.add('geselecteerd');
+  const p = pts[i];
+  const etappe = i === s ? 'Startpunt' : km(p.k - pts[i - 1].k) + ' vanaf ' + pts[i - 1].n;
+  detailEl.innerHTML =
+    `<b>${p.n}</b><br>` +
+    `Etappe: ${etappe}<br>` +
+    `Vanaf start: ${km(p.k - pts[s].k)}<br>` +
+    `Nog te gaan tot eind: ${km(pts[e].k - p.k)}<br>` +
+    `Totale afstand traject: ${km(pts[e].k - pts[s].k)}`;
+  detailEl.classList.add('open');
+}
+
+startSel.addEventListener('change', render);
+eindSel.addEventListener('change', render);
+render();
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
