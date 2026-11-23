@@ -38,6 +38,11 @@ footer{font-size:12px;color:#667;margin:16px 0}
 .alb textarea{min-height:44px}
 .ov{background:#fff;border-radius:8px;padding:10px;margin-bottom:8px;font-size:14px;line-height:1.5;box-shadow:0 1px 2px #0002}
 .ov a{color:#0f6b7a}
+.alb a{color:#0f6b7a}
+.dicht{background:#fde8ea;color:#b00020;padding:4px 8px;border-radius:6px;font-weight:600;margin:4px 0}
+.isopen{background:#e3f4e8;color:#1b6b35;padding:4px 8px;border-radius:6px;margin:4px 0}
+.info{font-size:13px;color:#334;line-height:1.5}
+td.d{color:#b00020}
 </style>
 </head>
 <body>
@@ -49,6 +54,9 @@ footer{font-size:12px;color:#667;margin:16px 0}
   </div>
   <label style="display:flex;align-items:center;gap:8px;margin:10px 0;font-size:14px">
     <input type="checkbox" id="filter"> Alleen plaatsen met albergue
+  </label>
+  <label style="display:block;margin:0 0 10px;font-size:14px">Datum van aankomst (voor de melding open/dicht)
+    <input type="date" id="datum" style="display:block;padding:6px;font-size:15px;margin-top:4px">
   </label>
   <div class="fout" id="fout">Het eindpunt moet na het startpunt liggen.</div>
   <div class="totaal">
@@ -68,8 +76,10 @@ footer{font-size:12px;color:#667;margin:16px 0}
     Afstanden uit de planificador van godesalco.com (Arturo J. Murias): Vía Lemovicense (standaardvariant met Nevers),
     Camino Francés (standaardvariant via Roncesvalles) en Prolongación a Finisterre (standaardvariant via Cee).
     Etappe = afstand tot de vorige plaats in de lijst (bij filter: vorige plaats met albergue).
-    "(FR …)" staat zo op godesalco. Albergues: aprinca.com, 88 albergues op de Camino Francés voor de winter.
-    Niet per albergue nagekeken; voor Vía Lemovicense en Finisterre staan er geen gegevens in.
+    "(FR …)" staat zo op godesalco. Albergues: lijst "Acogida peregrinos en invierno en el Camino Francés" van aprinca.com, bijgewerkt op 23-11-2026
+    (89 albergues, met telefoon, e-mail, website, sluitingsdagen en reservatie). Fouten melden aan Aprinca: acogidainvierno@gmail.com.
+    Openbare Xunta-albergues in Galicië staan niet op de lijst. Altijd de dag voordien bellen.
+    Voor Vía Lemovicense en Finisterre staan er geen gegevens in.
   </footer>
 </main>
 <script>
@@ -82,71 +92,7 @@ const FISTERRA = [["Santiago de Compostela",0],["Roxos",7.3],["Ventosa",10.1],["
 
 // Albergues per plaats, uit aprinca.com (88 albergues, Camino Francés, winteropening).
 // Sleutels zijn de plaatsnamen zoals godesalco ze gebruikt (zonder "(FR …)").
-const ALB = {
-  "Roncesvalles": ["Albergue de peregrinos"],
-  "Zubiri": ["Rio Arga"],
-  "Arre": ["Trinidad de Arre"],
-  "Villava": ["Municipal"],
-  "Pamplona": ["Jesús y María", "Plaza Catedral", "Aloha Hostel"],
-  "Puente la Reina": ["Padres Reparadores", "Estrella Guía"],
-  "Lorca": ["La Bodega del Camino"],
-  "Estella": ["Capuchinos Rocamador", "La Hostería del Camino", "Municipal"],
-  "Ázqueta": ["La Perla Negra"],
-  "Los Arcos": ["La Fuente Casa de Austria", "Los Arcos"],
-  "Sansol": ["Karma"],
-  "Torres del Río / Armañanzas": ["La Pata de Oca"],
-  "Viana": ["Municipal"],
-  "Logroño": ["Parroquia Santiago El Real", "Municipal"],
-  "Navarrete": ["La Iglesia"],
-  "Nájera": ["Municipal"],
-  "Cirueña": ["Virgen de Guadalupe"],
-  "Santo Domingo de la Calzada": ["Casa de la Cofradía del Santo"],
-  "Grañón": ["Parroquial San Juan Bautista"],
-  "Espinosa del Camino": ["El Gato Loco"],
-  "Villafranca de Montes de Oca": ["San Antón Abad"],
-  "San Juan de Ortega": ["La Cuadra de Luisito"],
-  "Atapuerca": ["Plazuela Verde"],
-  "Burgos": ["Municipal Casa de los Cubos"],
-  "Tardajos": ["La Casa de Beli"],
-  "Hornillos del Camino": ["Municipal"],
-  "Hontanas": ["San Juan"],
-  "Castrojeriz": ["A Cien Leguas", "San Esteban"],
-  "Itero de la Vega": ["Puente Fitero", "Hogar del Peregrino"],
-  "Frómista": ["Betania", "Luz de Frómista", "El chiringuito del Camino", "Municipal"],
-  "Población de Campos": ["Municipal"],
-  "Carrión de los Condes": ["Espíritu Santo"],
-  "Ledigos": ["La Morena", "El Palomar"],
-  "Terradillos de los Templarios": ["Albergue Jacques de Molay"],
-  "Moratinos": ["Albergue Moratinos"],
-  "Sahagún": ["Cluny", "Santa Cruz"],
-  "Calzada del Coto": ["San Roque"],
-  "Bercianos del Real Camino": ["El Sueve"],
-  "El Burgo Ranero": ["Domenico Laffi"],
-  "Villamarco": ["La Vieja Escuela"],
-  "Mansilla de las Mulas": ["Gaia", "Municipal"],
-  "León": ["Check in León"],
-  "San Martín del Camino": ["Vieira", "La Huella del Camino"],
-  "Hospital de Órbigo": ["Albergue Verde"],
-  "Villares de Órbigo": ["El Encanto"],
-  "Astorga": ["Siervas de María", "So Por Hoje", "Franciscanos Santa María de los Ángeles"],
-  "Murias de Rechivaldo": ["Casa Flor"],
-  "Rabanal del Camino": ["Ntra. Sra. Del Pilar"],
-  "Foncebadón": ["Domus Dei"],
-  "Molinaseca": ["Señor Oso"],
-  "Ponferrada": ["San Nicolás de Flüe"],
-  "Cacabelos": ["La Gallega"],
-  "Valtuille de Arriba": ["La Biznaga"],
-  "Villafranca del Bierzo": ["La Piedra"],
-  "Trabadelo": ["Crispeta", "Municipal"],
-  "Ambasmestas": ["Cantadora"],
-  "Ruitelán": ["Pequeño Potala"],
-  "Triacastela": ["Oribio", "Berce do Camiño", "El Beso"],
-  "Portomarín": ["Ultreia", "Casona da Ponte"],
-  "Palas de Rei": ["A Casina di Marcello", "Zendoira"],
-  "Melide": ["Pereiro"],
-  "Arzúa": ["Vía Láctea"],
-  "O Pedrouzo": ["O Burgo"]
-};
+const ALB = {"Roncesvalles": [{"n": "Albergue de peregrinos","t": ["948760000"],"m": "info@alberguederoncesvalles.com","w": "www.alberguederoncesvalles.com","res": "Reserveren aanbevolen"}],"Zubiri": [{"n": "Rio Arga","t": ["680104471"],"res": "Reserveren aanbevolen"}],"Arre": [{"n": "Trinidad de Arre","t": ["691619028"],"tx": "ook WhatsApp","w": "https://alberguetrinidadarre.com/reservas-albergue/","res": "Reserveren aanbevolen"}],"Villava": [{"n": "Municipal","t": ["948517731"],"res": "Reserveren aanbevolen"}],"Pamplona": [{"n": "Jesús y María","t": ["948222644","648008932"],"d": "Dicht van 23/12 t/m 8/1","r": [["23/12","8/1"]],"res": "Reserveren aanbevolen"},{"n": "Plaza Catedral","t": ["620913968"],"d": "Dicht 24/12, 25/12 en van 31/12 t/m 7/1; vanaf 8/1 dicht van maandag t/m vrijdag","r": [["24/12","25/12"],["31/12","7/1"]],"wd": [[[1,2,3,4,5],"8/1",null]],"res": "Reservatie nodig"},{"n": "Aloha Hostel","t": ["648289403"],"d": "Dicht 25/12 en 1/1","r": [["25/12","25/12"],["1/1","1/1"]],"res": "Reservatie nodig"}],"Puente la Reina": [{"n": "Padres Reparadores","t": ["663615795"],"res": "Reserveren via WhatsApp aanbevolen"},{"n": "Estrella Guía","t": ["622262431"],"m": "albergueestrellaguia@gmail.com","d": "Dicht van 1/12 t/m 1/3","r": [["1/12","1/3"]],"res": "Reservatie nodig"}],"Lorca": [{"n": "La Bodega del Camino","t": ["614739493"],"d": "Dicht van 22/11 t/m 13/12","r": [["22/11","13/12"]]}],"Estella": [{"n": "Capuchinos Rocamador","t": ["948550549"],"w": "alberguescapuchinos.org","d": "Dicht 29/11, 13/12 en van 19/12 t/m 31/1; februari dicht behalve groepen met reservatie","r": [["29/11","29/11"],["13/12","13/12"],["19/12","28/2"]],"res": "Reserveren aanbevolen"},{"n": "La Hostería del Camino","t": ["663613642"],"tx": "telefoon en WhatsApp","m": "curtidores@albergueestella.com","w": "lahosteriadelcamino.com","res": "Reserveren aanbevolen"},{"n": "Municipal","t": ["948550200","690272169"],"tx": "tweede nummer ook WhatsApp","d": "Dicht van 14/12 t/m 18/1","r": [["14/12","18/1"]]}],"Ázqueta": [{"n": "La Perla Negra","t": ["627114797"]}],"Los Arcos": [{"n": "Los Arcos","t": ["676684350"]}],"Sansol": [{"n": "Karma","t": ["665170116"],"tx": "telefoon en WhatsApp","m": "alberguekarma@gmail.com","res": "Reservatie nodig"}],"Torres del Río / Armañanzas": [{"n": "La Pata de Oca","t": ["622018929"]}],"Viana": [{"n": "Municipal","d": "Dicht 24/12, 25/12, 31/12, 1/1, 5/1 en 6/1","r": [["24/12","25/12"],["31/12","1/1"],["5/1","6/1"]],"res": "Geen reservaties"}],"Logroño": [{"n": "Parroquia Santiago El Real","t": ["686325686"],"res": "Geen reservaties"},{"n": "Municipal","t": ["941245671"]}],"Navarrete": [{"n": "La Iglesia","t": ["602265787","621231244"],"d": "Dicht van 18/12 t/m 3/1","r": [["18/12","3/1"]],"res": "Reserveren aanbevolen"}],"Nájera": [{"n": "Municipal","t": ["941095730"],"res": "Geen reservaties"}],"Cirueña": [{"n": "Virgen de Guadalupe","t": ["638924069"],"d": "Dicht van 20/11 t/m 9/1","r": [["20/11","9/1"]],"res": "Reserveren aanbevolen"}],"Santo Domingo de la Calzada": [{"n": "Casa de la Cofradía del Santo","t": ["941343390","649013394"],"tx": "tweede nummer WhatsApp","m": "albergue@alberguecofradiadelsanto.com"}],"Grañón": [{"n": "Parroquial San Juan Bautista","t": ["633915800"],"res": "Geen reservaties"}],"Villambistia": [{"n": "San Roque","t": ["670742677"],"tx": "telefoon en WhatsApp","d": "Dicht 25/11, 2/12, 9/12, 16/12, 21/12, 28/12; woensdag in januari en februari; van 3/2 t/m 10/2","r": [["25/11","25/11"],["2/12","2/12"],["9/12","9/12"],["16/12","16/12"],["21/12","21/12"],["28/12","28/12"],["3/2","10/2"]],"wd": [[[3],"1/1","28/2"]]}],"Espinosa del Camino": [{"n": "El Gato Loco","t": ["608937299"],"d": "Dicht van 24/12 t/m 26/12","r": [["24/12","26/12"]],"res": "Geen reservaties"},{"n": "La Taberna","t": ["649034661"],"tx": "telefoon en WhatsApp","d": "Dicht op donderdag, 24/12, 25/12 en van 31/12 t/m 28/2","r": [["24/12","25/12"],["31/12","28/2"]],"wd": [[[4],null,null]],"res": "Reservatie via WhatsApp nodig"}],"Villafranca de Montes de Oca": [{"n": "San Antón Abad","t": ["947582150"],"d": "Dicht van 30/11 t/m 15/3","r": [["30/11","15/3"]]}],"San Juan de Ortega": [{"n": "La Cuadra de Luisito","t": ["652874119"],"w": "www.alberguelacuadra.com","d": "Dicht van 30/11 t/m 28/2","r": [["30/11","28/2"]]}],"Atapuerca": [{"n": "Plazuela Verde","t": ["658647720","654301152"],"tx": "telefoon en WhatsApp"}],"Burgos": [{"n": "Municipal Casa de los Cubos","t": ["947460922"],"res": "Geen reservaties"}],"Tardajos": [{"n": "La Casa de Beli","t": ["947451234"],"d": "Dicht van 21/12 t/m 28/2","r": [["21/12","28/2"]]}],"Hornillos del Camino": [{"n": "Municipal","t": ["689784681"],"tx": "WhatsApp","w": "hornillosalbergue.es","d": "Dicht 24/12, 25/12, 31/12 en heel januari","r": [["24/12","25/12"],["31/12","31/1"]],"res": "Reservatie nodig"}],"Hontanas": [{"n": "San Juan","t": ["653532647"],"m": "alberguemunicipalhontanas@gmail.com","w": "alberguemunicipalhontanas.es","d": "Dicht op zaterdag, 24/12, 25/12 en 31/12","r": [["24/12","25/12"],["31/12","31/12"]],"wd": [[[6],null,null]],"res": "Reservatie de dag ervoor nodig"}],"Castrojeriz": [{"n": "A Cien Leguas","t": ["947562305"],"d": "Dicht op dinsdag","wd": [[[2],null,null]],"res": "Reservatie nodig"},{"n": "San Esteban","t": ["629283742"]}],"Itero de la Vega": [{"n": "Hogar del Peregrino","t": ["690249459","634360156"],"m": "alberguehogardelperegrinon17@hotmail.com","res": "Reservatie de dag ervoor nodig (minimaal 4 personen)"}],"Frómista": [{"n": "Betania","t": ["638846043"],"d": "Dicht 8/12 en 9/12","r": [["8/12","9/12"]],"res": "Reservatie nodig"},{"n": "El chiringuito del Camino","t": ["645746055"],"tx": "alleen WhatsApp","d": "Dicht op maandag, van 22/11 t/m 13/12 en van 29/12 t/m 5/1","r": [["22/11","13/12"],["29/12","5/1"]],"wd": [[[1],null,null]],"res": "Reserveren aanbevolen"},{"n": "Municipal","t": ["686579702"],"tx": "WhatsApp","d": "Dicht van 1/12 t/m 28/2","r": [["1/12","28/2"]],"res": "Reservatie via WhatsApp nodig"}],"Población de Campos": [{"n": "Municipal","t": ["613821136"],"d": "Dicht van 26/11 t/m 28/12","r": [["26/11","28/12"]],"res": "Reservatie nodig"}],"Villarmentero de Campos": [{"n": "Villarmentero","t": ["672705714"]}],"Carrión de los Condes": [{"n": "Espíritu Santo","t": ["979880052"]}],"Ledigos": [{"n": "La Morena","t": ["626972118"],"w": "alberguelamorena (website, adres onvolledig op de lijst)","d": "Dicht van 23/12 t/m 10/1","r": [["23/12","10/1"]],"res": "Reserveren aanbevolen (via website)"},{"n": "El Palomar","t": ["665357210"],"tx": "WhatsApp","m": "alberguelpalomar@gmail.com","d": "Dicht op maandag en dinsdag","wd": [[[1,2],null,null]],"res": "Reservatie nodig"}],"Terradillos de los Templarios": [{"n": "Albergue Jacques de Molay","t": ["657165011"],"m": "yacquesdemolay@hotmail.com","d": "Dicht van 29/11 t/m 28/2","r": [["29/11","28/2"]],"res": "Reserveren aanbevolen (WhatsApp of e-mail)"}],"Moratinos": [{"n": "Albergue Moratinos","t": ["665755208"]}],"Sahagún": [{"n": "Cluny","t": ["987781015","987781255"],"d": "Dicht 24/12, 25/12, 31/12 en 1/1","r": [["24/12","25/12"],["31/12","1/1"]],"res": "Reserveren aanbevolen"}],"Calzada del Coto": [{"n": "San Roque","t": ["606532920","650979425"]},{"n": "Municipal Calzadilla de los Hermanillos (variant Calzada Romana)","t": ["987330023"]}],"Bercianos del Real Camino": [{"n": "El Sueve","t": ["987784139","697445379"],"d": "Dicht op maandag","wd": [[[1],null,null]],"res": "Reservatie nodig"},{"n": "Santa Clara","t": ["605839993","605839996"],"d": "Dicht op donderdag","wd": [[[4],null,null]]}],"El Burgo Ranero": [{"n": "Domenico Laffi","t": ["987330023"]}],"Villamarco": [{"n": "La Vieja Escuela"}],"Mansilla de las Mulas": [{"n": "Gaia","t": ["699911311"],"d": "Dicht van 23/12 t/m 27/12 en van 15/2 t/m 28/2","r": [["23/12","27/12"],["15/2","28/2"]],"res": "Reserveren aanbevolen"},{"n": "Municipal","t": ["604090221"],"d": "Dicht van 30/11 t/m 28/2","r": [["30/11","28/2"]]}],"León": [{"n": "Check in León","t": ["686956896"],"tx": "telefoon en WhatsApp","w": "checkinleon.es","res": "Reserveren aanbevolen; op zondag reservatie nodig"},{"n": "San Francisco de Asís","t": ["637439848"],"res": "Reserveren aanbevolen"}],"Villadangos del Páramo": [{"n": "Municipal","t": ["625098321"]}],"San Martín del Camino": [{"n": "Vieira","t": ["620671864"],"d": "Dicht 24/12, 25/12, 31/12 en 1/1","r": [["24/12","25/12"],["31/12","1/1"]],"res": "Reserveren aanbevolen"}],"Hospital de Órbigo": [{"n": "Albergue Verde","t": ["689927926"],"d": "Dicht vanaf 1/12 (geen einddatum vermeld)","r": [["1/12","30/4"]]},{"n": "La Encina","t": ["606306836"],"d": "Dicht 25/12, 1/1 en van 4/1 t/m 28/1","r": [["25/12","25/12"],["1/1","1/1"],["4/1","28/1"]],"res": "Reserveren aanbevolen"}],"Villares de Órbigo": [{"n": "El Encanto","t": ["682860210"],"d": "Dicht van 23/12 t/m 28/2; alleen privékamers","r": [["23/12","28/2"]],"res": "Reservatie nodig"}],"Santibáñez de Valdeiglesias": [{"n": "L'Abilleiru","t": ["615269057"],"tx": "telefoon en WhatsApp","d": "Dicht van 10/12 t/m 31/1","r": [["10/12","31/1"]],"res": "Reservatie nodig"}],"Astorga": [{"n": "Siervas de María","t": ["987616034"],"res": "Geen reservaties"},{"n": "So Por Hoje","t": ["690749853"],"d": "Dicht van 26/12 t/m 28/2","r": [["26/12","28/2"]]},{"n": "Franciscanos Santa María de los Ángeles","t": ["622162957"],"tx": "telefoon en WhatsApp","m": "acogidafranciscana.astorga@pazybien.org","d": "Dicht op dinsdag en van 1/12 t/m 30/3","r": [["1/12","30/3"]],"wd": [[[2],null,null]]}],"Murias de Rechivaldo": [{"n": "Casa Flor","t": ["609478323"],"d": "Dicht van 20/12 t/m 10/1","r": [["20/12","10/1"]],"res": "Reservatie nodig"}],"Rabanal del Camino": [{"n": "Ntra. Sra. Del Pilar","t": ["987631621"],"res": "Reservatie nodig"}],"Foncebadón": [{"n": "Domus Dei","m": "alberguesparroquiales@gmail.com","d": "Dicht van 29/12 t/m 2/1","r": [["29/12","2/1"]],"res": "Geen reservaties"}],"Molinaseca": [{"n": "Señor Oso","t": ["661761970"],"d": "Dicht van 18/12 t/m 1/4","r": [["18/12","1/4"]],"res": "Reservatie nodig"}],"Ponferrada": [{"n": "San Nicolás de Flüe","t": ["987413381"],"res": "Geen reservaties"}],"Cacabelos": [{"n": "La Gallega","t": ["680917109","987549476"],"res": "Reserveren aanbevolen"}],"Valtuille de Arriba": [{"n": "La Biznaga","t": ["722512652"],"d": "Dicht op zondag en van 21/12 t/m 3/1","r": [["21/12","3/1"]],"wd": [[[0],null,null]],"res": "Reservatie nodig"}],"Villafranca del Bierzo": [{"n": "La Piedra","d": "Dicht van 1/12 t/m 28/2","r": [["1/12","28/2"]]},{"n": "Venecia Hostel-B&B","t": ["629206074"],"d": "Dicht van 28/12 t/m 11/1","r": [["28/12","11/1"]],"res": "Reserveren aanbevolen"}],"Trabadelo": [{"n": "Crispeta","t": ["620329386","987566529"],"d": "Dicht van 1/2 t/m 28/2","r": [["1/2","28/2"]],"res": "Reserveren aanbevolen"}],"Ambasmestas": [{"n": "Cantadora","d": "Dicht van 2/12 t/m 28/2","r": [["2/12","28/2"]]}],"Ruitelán": [{"n": "Pequeño Potala","t": ["987561322"],"m": "pequepotala@hotmail.com","d": "Dicht 28/11","r": [["28/11","28/11"]],"res": "Reservatie nodig"}],"Triacastela": [{"n": "Oribio","t": ["616774558"]},{"n": "Berce do Camiño","t": ["619468210"],"res": "Reserveren aanbevolen"},{"n": "El Beso","t": ["633550558"],"d": "Dicht 24/12, 25/12, 31/12, 1/1 en 11/2","r": [["24/12","25/12"],["31/12","1/1"],["11/2","11/2"]],"res": "Reservatie nodig"}],"Portomarín": [{"n": "Ultreia","t": ["676607292"],"d": "Dicht van 17/12 t/m 22/12","r": [["17/12","22/12"]],"res": "Reserveren aanbevolen"},{"n": "Casona da Ponte","t": ["686112877","982169862"],"res": "Reserveren aanbevolen"}],"Palas de Rei": [{"n": "A Casina di Marcello","t": ["640723903"],"tx": "WhatsApp","w": "albergueacasina.com","d": "Dicht op donderdag en van 1/11 t/m 19/12","r": [["1/11","19/12"]],"wd": [[[4],null,null]],"res": "Reservatie nodig (via website)"},{"n": "Zendoira","t": ["608490075"],"d": "Dicht op zondag en van 4/12 t/m 1/3, behalve grote groepen met reservatie","r": [["4/12","1/3"]],"wd": [[[0],null,null]],"res": "Reservatie nodig"}],"Melide": [{"n": "Pereiro","t": ["981506314"],"d": "Van december t/m februari alleen groepen en privékamers, met reservatie","res": "Reservatie nodig"}],"Arzúa": [{"n": "Vía Láctea","res": "Reservatie nodig"}]};
 
 // Samenvoegen tot één lijst. Junctiepunten (SJPP, Santiago) staan één keer.
 const r1 = x => Math.round(x * 10) / 10;
@@ -177,8 +123,61 @@ const filterEl = document.getElementById('filter');
 
 // Albergues voor een plaats; "(FR …)" uit de naam weggehaald voor de opzoeking.
 function albOf(i) {
-  const n = pts[i].n.replace(/\s*\(FR[^)]*\)\s*$/, '').trim();
-  return ALB[n] || [];
+  return albData(pts[i].n).map(a => a.n);
+}
+function albData(plaats) {
+  return ALB[plaats.replace(/\s*\(FR[^)]*\)\s*$/, '').trim()] || [];
+}
+function albInfo(plaats, naam) {
+  return albData(plaats).find(a => a.n === naam) || {};
+}
+
+// Datum van aankomst. Seizoen: juli-december = 2026, januari-juni = 2027.
+const datumEl = document.getElementById('datum');
+const vandaag = new Date();
+datumEl.value = localStorage.getItem('datum') ||
+  `${vandaag.getFullYear()}-${String(vandaag.getMonth() + 1).padStart(2, '0')}-${String(vandaag.getDate()).padStart(2, '0')}`;
+const DAGEN = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
+function dm(s) {
+  const [d, m] = s.split('/').map(Number);
+  return new Date(m >= 7 ? 2026 : 2027, m - 1, d);
+}
+function gekozenDatum() {
+  const [y, m, d] = (datumEl.value || '').split('-').map(Number);
+  return y ? new Date(y, m - 1, d) : null;
+}
+function datumTekst(dt) {
+  return DAGEN[dt.getDay()] + ' ' + dt.getDate() + '/' + (dt.getMonth() + 1) + '/' + dt.getFullYear();
+}
+// true = dicht op die datum volgens de lijst
+function dichtOp(a, dt) {
+  if (!dt) return false;
+  if ((a.r || []).some(([van, tot]) => dt >= dm(van) && dt <= dm(tot))) return true;
+  return (a.wd || []).some(([dagen, van, tot]) =>
+    dagen.includes(dt.getDay()) && (!van || dt >= dm(van)) && (!tot || dt <= dm(tot)));
+}
+function statusHtml(a) {
+  const dt = gekozenDatum();
+  if (!dt) return '';
+  return dichtOp(a, dt)
+    ? `<div class="dicht">DICHT op ${datumTekst(dt)}</div>`
+    : `<div class="isopen">Open op ${datumTekst(dt)} volgens de lijst${a.d ? ' (zie sluitingsdagen)' : ''}</div>`;
+}
+function telLinks(t) {
+  return `<a href="tel:+34${t}">${t.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}</a> · <a href="https://wa.me/34${t}">WhatsApp</a>`;
+}
+function infoHtml(a) {
+  const r = [];
+  (a.t || []).forEach(t => r.push('Tel. ' + telLinks(t)));
+  if (a.tx) r.push('<i>' + esc(a.tx) + '</i>');
+  if (a.m) r.push(`E-mail: <a href="mailto:${esc(a.m)}">${esc(a.m)}</a>`);
+  if (a.w) r.push(/\./.test(a.w) && !/\s/.test(a.w)
+    ? `Web: <a href="${a.w.startsWith('http') ? '' : 'https://'}${esc(a.w)}" target="_blank" rel="noopener">${esc(a.w)}</a>`
+    : 'Web: ' + esc(a.w));
+  if (a.d) r.push('<b>Sluiting:</b> ' + esc(a.d));
+  if (a.res) r.push('Reservatie: ' + esc(a.res));
+  if (!(a.t || []).length && !a.m) r.push('Geen telefoon of e-mail op de lijst');
+  return `<div class="info">${r.join('<br>')}</div>`;
 }
 
 // Eigen keuzes per albergue, alleen op dit toestel opgeslagen (localStorage).
@@ -199,11 +198,11 @@ function albergueBlok(plaats, naam) {
   const div = document.createElement('div');
   div.className = 'alb';
   div.innerHTML =
-    `<b>${esc(naam)}</b>` +
+    `<b>${esc(naam)}</b>` + statusHtml(albInfo(plaats, naam)) + infoHtml(albInfo(plaats, naam)) +
     `<select data-f="status">` +
       `<option value="">Nog niets</option><option>Voorkeur</option><option>Gekozen</option><option>Geboekt</option>` +
     `</select>` +
-    `<input type="text" placeholder="Telefoon / WhatsApp (met landcode, bv. +34…)">` +
+    `<input type="text" placeholder="Extra telefoon (optioneel, met landcode)">` +
     `<textarea placeholder="Notitie"></textarea>`;
   div.querySelector('select').value = st.status;
   div.querySelector('input').value = st.tel;
@@ -238,9 +237,11 @@ function renderOverzicht() {
     const links = nummer
       ? ` <a href="tel:${nummer}">Bel</a> · <a href="https://wa.me/${nummer.replace('+', '')}">WhatsApp</a>`
       : '';
+    const a = albInfo(p.n, naam);
     return `<div class="ov"><b>${esc(p.n)}</b> · ${esc(naam)}` +
-      (st.status ? ` · <i>${esc(st.status)}</i>` : '') +
-      `<br>${st.tel ? esc(st.tel) : ''}${links}` +
+      (st.status ? ` · <i>${esc(st.status)}</i>` : '') + statusHtml(a) +
+      ((a.t || []).length ? 'Tel. ' + a.t.map(telLinks).join(' / ') : '') +
+      (st.tel ? `<br>Extra: ${esc(st.tel)}${links}` : '') +
       (st.notitie ? `<br><span style="color:#445">${esc(st.notitie)}</span>` : '') +
       `</div>`;
   }).join('');
@@ -274,11 +275,15 @@ function render() {
     tr.dataset.i = i;
     const etappe = prev === null ? '–' : km(pts[i].k - pts[prev].k);
     const aantal = albOf(i).length;
+    const dt = gekozenDatum();
+    const nDicht = albData(pts[i].n).filter(a => dichtOp(a, dt)).length;
     tr.innerHTML =
       `<td></td><td>${etappe}</td><td>${km(pts[i].k - pts[s].k)}</td>` +
-      `<td>${km(pts[e].k - pts[i].k)}</td><td>${aantal || '–'}</td>`;
+      `<td>${km(pts[e].k - pts[i].k)}</td>` +
+      `<td${nDicht ? ' class="d"' : ''}>${aantal ? aantal + (nDicht ? ` (${nDicht} dicht)` : '') : '–'}</td>`;
     tr.firstChild.textContent = pts[i].n;
-    tr.addEventListener('click', () => toonDetail(i, prev, s, e));
+    const vorige = prev;
+    tr.addEventListener('click', () => toonDetail(i, vorige, s, e));
     rowsEl.appendChild(tr);
     prev = i;
   });
@@ -308,6 +313,11 @@ function toonDetail(i, prev, s, e) {
 startSel.addEventListener('change', render);
 eindSel.addEventListener('change', render);
 filterEl.addEventListener('change', render);
+datumEl.addEventListener('change', () => {
+  localStorage.setItem('datum', datumEl.value);
+  render();
+  renderOverzicht();
+});
 render();
 renderOverzicht();
 
